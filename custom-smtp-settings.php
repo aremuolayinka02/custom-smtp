@@ -16,6 +16,7 @@ define('CUSTOM_SMTP_VERSION', '1.0.0');
 define('CUSTOM_SMTP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CUSTOM_SMTP_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+
 // Include necessary files
 require_once CUSTOM_SMTP_PLUGIN_DIR . 'includes/class-smtp-settings.php';
 require_once CUSTOM_SMTP_PLUGIN_DIR . 'includes/class-smtp-mailer.php';

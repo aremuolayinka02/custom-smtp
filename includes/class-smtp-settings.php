@@ -10,6 +10,7 @@ class SMTP_Settings
     public function __construct()
     {
         $this->options = get_option('custom_smtp_settings');
+        add_action('admin_head', array($this, 'add_admin_styles'));
     }
 
     public function add_settings_page()
@@ -62,33 +63,8 @@ class SMTP_Settings
                 array('field_id' => $field_id)
             );
         }
-
-        // Add test email section
-        add_settings_section(
-            'custom_smtp_test_section',
-            'Test Email Settings',
-            array($this, 'test_section_description'),
-            'custom-smtp-settings'
-        );
-
-        // Add test email fields
-        $test_fields = array(
-            'test_to_email' => 'To Email',
-            'test_subject' => 'Subject',
-            'test_message' => 'Message'
-        );
-
-        foreach ($test_fields as $field_id => $field_label) {
-            add_settings_field(
-                $field_id,
-                $field_label,
-                array($this, 'render_test_field'),
-                'custom-smtp-settings',
-                'custom_smtp_test_section',
-                array('field_id' => $field_id)
-            );
-        }
     }
+
 
 
     public function render_test_field($args)
@@ -118,43 +94,115 @@ class SMTP_Settings
 
     public function render_settings_page()
     {
+
+        // Handle test email submission
         if (isset($_POST['send_test_email'])) {
             $this->handle_test_email();
         }
+        // Get current tab
+        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'settings';
     ?>
         <div class="wrap">
             <h2>Custom SMTP Settings</h2>
 
-            <!-- SMTP Settings Form -->
-            <form method="post" action="options.php">
-                <?php
-                settings_fields('custom_smtp_settings_group');
-                do_settings_sections('custom-smtp-settings');
-                submit_button('Save Settings');
-                ?>
-            </form>
+            <!-- Tabs -->
+            <nav class="nav-tab-wrapper">
+                <a href="?page=custom-smtp-settings&tab=settings"
+                    class="nav-tab <?php echo $current_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
+                    SMTP Settings
+                </a>
+                <a href="?page=custom-smtp-settings&tab=test"
+                    class="nav-tab <?php echo $current_tab === 'test' ? 'nav-tab-active' : ''; ?>">
+                    Test Email
+                </a>
+            </nav>
 
-            <!-- Test Email Form -->
-            <form method="post" action="">
-                <h3>Send Test Email</h3>
-                <table class="form-table">
-                    <tr>
-                        <th scope="row"><label for="test_to_email">To Email:</label></th>
-                        <td><input type="email" name="test_to_email" id="test_to_email" class="regular-text" required></td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="test_subject">Subject:</label></th>
-                        <td><input type="text" name="test_subject" id="test_subject" class="regular-text" required></td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="test_message">Message:</label></th>
-                        <td><textarea name="test_message" id="test_message" rows="5" cols="50" required></textarea></td>
-                    </tr>
-                </table>
-                <?php submit_button('Send Test Email', 'secondary', 'send_test_email'); ?>
-            </form>
+            <div class="tab-content">
+                <?php
+                if ($current_tab === 'settings') {
+                    $this->render_settings_tab();
+                } elseif ($current_tab === 'test') {
+                    $this->render_test_email_tab();
+                } elseif ($current_tab === 'logs') {
+                    $this->render_logs_tab();
+                }
+                ?>
+            </div>
         </div>
-        <?php
+    <?php
+    }
+
+    // Tab for Logs
+    private function render_logs_tab()
+    {
+        $logger = new SMTP_Logger();
+        $logs = $logger->get_logs(); // Fetch logs from the database
+    ?>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>To</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Date Sent</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($logs)) : ?>
+                    <?php foreach ($logs as $log) : ?>
+                        <tr>
+                            <td><?php echo esc_html($log->id); ?></td>
+                            <td><?php echo esc_html($log->to_email); ?></td>
+                            <td><?php echo esc_html($log->subject); ?></td>
+                            <td><?php echo esc_html($log->status); ?></td>
+                            <td><?php echo esc_html($log->date_sent); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="5">No logs found.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    <?php
+    }
+
+    private function render_settings_tab()
+    {
+    ?>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('custom_smtp_settings_group');
+            do_settings_sections('custom-smtp-settings');
+            submit_button('Save Settings');
+            ?>
+        </form>
+    <?php
+    }
+
+    private function render_test_email_tab()
+    {
+    ?>
+        <form method="post" action="">
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="test_to_email">To Email:</label></th>
+                    <td><input type="email" name="test_to_email" id="test_to_email" class="regular-text" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="test_subject">Subject:</label></th>
+                    <td><input type="text" name="test_subject" id="test_subject" class="regular-text" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="test_message">Message:</label></th>
+                    <td><textarea name="test_message" id="test_message" rows="5" cols="50" required></textarea></td>
+                </tr>
+            </table>
+            <?php submit_button('Send Test Email', 'secondary', 'send_test_email'); ?>
+        </form>
+    <?php
     }
 
     // Add this method to the SMTP_Settings class
@@ -211,6 +259,24 @@ class SMTP_Settings
                 'error'
             );
         }
+    }
+
+    public function add_admin_styles()
+    {
+    ?>
+        <style>
+            .nav-tab-wrapper {
+                margin-bottom: 20px;
+            }
+
+            .tab-content {
+                padding: 20px;
+                background: #fff;
+                border: 1px solid #ccd0d4;
+                border-top: none;
+            }
+        </style>
+        <?php
     }
 
     public function render_field($args)
