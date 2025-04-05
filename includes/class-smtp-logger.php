@@ -94,39 +94,78 @@ class SMTP_Logger
 
     public function render_settings_page()
     {
+
+        // Handle test email submission
+        if (isset($_POST['send_test_email'])) {
+            $this->handle_test_email();
+        }
+        // Get current tab
+        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'settings';
 ?>
         <div class="wrap">
             <h2>Custom SMTP Settings</h2>
-            <form method="post" action="options.php">
+
+            <!-- Tabs -->
+            <nav class="nav-tab-wrapper">
+                <a href="?page=custom-smtp-settings&tab=settings"
+                    class="nav-tab <?php echo $current_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
+                    SMTP Settings
+                </a>
+                <a href="?page=custom-smtp-settings&tab=test"
+                    class="nav-tab <?php echo $current_tab === 'test' ? 'nav-tab-active' : ''; ?>">
+                    Test Email
+                </a>
+            </nav>
+
+            <div class="tab-content">
                 <?php
-                settings_fields('custom_smtp_settings_group');
-                do_settings_sections('custom-smtp-settings');
-                submit_button();
+                if ($current_tab === 'settings') {
+                    $this->render_settings_tab();
+                } else {
+                    $this->render_test_email_tab();
+                }
                 ?>
-                <button type="button" class="button button-secondary" onclick="sendTestEmail()">Send Test Email</button>
-            </form>
+            </div>
         </div>
-        <script>
-            function sendTestEmail() {
-                // Add AJAX test email functionality here
-                alert('Test email functionality will be implemented soon!');
-            }
-        </script>
+    <?php
+    }
+
+    private function render_settings_tab()
+    {
+    ?>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('custom_smtp_settings_group');
+            do_settings_sections('custom-smtp-settings');
+            submit_button('Save Settings');
+            ?>
+        </form>
+    <?php
+    }
+
+    private function render_test_email_tab()
+    {
+    ?>
+        <form method="post" action="">
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="test_to_email">To Email:</label></th>
+                    <td><input type="email" name="test_to_email" id="test_to_email" class="regular-text" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="test_subject">Subject:</label></th>
+                    <td><input type="text" name="test_subject" id="test_subject" class="regular-text" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="test_message">Message:</label></th>
+                    <td><textarea name="test_message" id="test_message" rows="5" cols="50" required></textarea></td>
+                </tr>
+            </table>
+            <?php submit_button('Send Test Email', 'secondary', 'send_test_email'); ?>
+        </form>
         <?php
     }
 
-
-    public function send_test_email()
-    {
-        $to = get_option('admin_email');
-        $subject = 'SMTP Test Email';
-        $message = 'This is a test email from your WordPress site using the Custom SMTP plugin.';
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-
-        $result = wp_mail($to, $subject, $message, $headers);
-
-        return $result;
-    }
 
     public function render_field($args)
     {

@@ -10,6 +10,7 @@ class SMTP_Settings
     public function __construct()
     {
         $this->options = get_option('custom_smtp_settings');
+        add_action('admin_head', array($this, 'add_admin_styles'));
     }
 
     public function add_settings_page()
@@ -62,33 +63,8 @@ class SMTP_Settings
                 array('field_id' => $field_id)
             );
         }
-
-        // Add test email section
-        add_settings_section(
-            'custom_smtp_test_section',
-            'Test Email Settings',
-            array($this, 'test_section_description'),
-            'custom-smtp-settings'
-        );
-
-        // Add test email fields
-        $test_fields = array(
-            'test_to_email' => 'To Email',
-            'test_subject' => 'Subject',
-            'test_message' => 'Message'
-        );
-
-        foreach ($test_fields as $field_id => $field_label) {
-            add_settings_field(
-                $field_id,
-                $field_label,
-                array($this, 'render_test_field'),
-                'custom-smtp-settings',
-                'custom_smtp_test_section',
-                array('field_id' => $field_id)
-            );
-        }
     }
+
 
 
     public function render_test_field($args)
@@ -154,7 +130,7 @@ class SMTP_Settings
                 <?php submit_button('Send Test Email', 'secondary', 'send_test_email'); ?>
             </form>
         </div>
-        <?php
+    <?php
     }
 
     // Add this method to the SMTP_Settings class
@@ -211,6 +187,24 @@ class SMTP_Settings
                 'error'
             );
         }
+    }
+
+    public function add_admin_styles()
+    {
+    ?>
+        <style>
+            .nav-tab-wrapper {
+                margin-bottom: 20px;
+            }
+
+            .tab-content {
+                padding: 20px;
+                background: #fff;
+                border: 1px solid #ccd0d4;
+                border-top: none;
+            }
+        </style>
+        <?php
     }
 
     public function render_field($args)
